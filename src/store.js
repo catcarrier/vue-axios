@@ -20,13 +20,12 @@ export default new Vuex.Store({
       state.userId = userData.userId;
     },
     'STORE_USER': (state, userData) => {
-      console.log('STORE_USER:', userData);
       state.user = userData;
     },
     'CLEAR_AUTH': (state) => {
       state.idToken = null;
       state.userId = null;
-      state.user=null;
+      state.user = null;
     }
 
   },
@@ -40,29 +39,43 @@ export default new Vuex.Store({
       axios.post('signupNewUser?key=' + API_KEY, authData)
         .then(res => {
 
+          console.log('signup response', res);
+
           // firebase assigns the new user its own id and returns this as response.data.localId
           commit('AUTH_USER', {
             token: res.data.idToken,
             userId: res.data.localId
           });
+
+          console.log('done with AUTH_USER')
+
+          // token expires in n seconds; set up automatic expiration in n seconds
+          const expirationSeconds = res.data.expiresIn;
+          dispatch('setAutoLogout', expirationSeconds);
+
           dispatch('storeUser', formData); /* store the original form-data not the auth version */
+
+          
         })
         .catch(err => {
-          console.log(err)
+          console.log("signupNewUser err", err)
         });
     },
 
     storeUser({ commit }, userData) {
       // if there is no token in state, do nothing, the user is not authenticated
-      if(!this.state.idToken) { return; }
+      if (!this.state.idToken) { return; }
 
       // firebase auth is done by passing the idtoken as query param
       globalAxios.post('users.json' + '?auth=' + this.state.idToken, userData)
-        .then(res => { console.log(res) })
-        .catch(err => { console.log(err) })
+        .then(res => { 
+          console.log('storeUser response',res);
+          router.push('/dashboard');
+        })
+        .catch(err => { 'storeUser error', console.log(err) })
     },
 
-    login({ commit }, formData) {
+    login({ commit, dispatch }, formData) {
       // See: https://firebase.google.com/docs/reference/rest/auth/#section-create-email-password
       const authData = {
         email: formData.email,
@@ -71,31 +84,43 @@ export default new Vuex.Store({
       };
       axios.post('verifyPassword?key=' + API_KEY, authData)
         .then(res => {
-          // console.log(res);
+          console.log('login response', res);
           commit('AUTH_USER', {
             token: res.data.idToken,
             userId: res.data.localId
           });
+
+          // token expires in n seconds; set up automatic expiration in n seconds
+          const expirationSeconds = res.data.expiresIn;
+          dispatch('setAutoLogout', expirationSeconds);
+
           router.push('dashboard');
         })
         .catch(err => {
-          console.log(err);
+          console.log('login error', err);
         });
     },
 
-    logout({commit}) {
+    logout({ commit }) {
       commit('CLEAR_AUTH');
-      router.replace('/'); // No Back
+      router.replace('/');// No Back
+    },
+
+    setAutoLogout({ commit }, intervalSeconds) {
+      // setTimeout(commit('CLEAR_AUTH'), intervalSeconds * 1000);
+      setTimeout( () => {
+        commit('CLEAR_AUTH');
+        router.push('/');
+      }, intervalSeconds ); // test
     },
 
     fetchUser({ commit, state }) {
-      if(!state.idToken) { 
-        return; 
-      } // not authenticated
+      if (!state.idToken) {
+        return;
+      }
 
-      globalAxios.get('users.json'+ '?auth=' + state.idToken)
+      globalAxios.get('users.json' + '?auth=' + state.idToken)
         .then(res => {
-          console.log('ures:', res)
           const data = res.data;
           const users = [];
           for (let key in data) {
@@ -103,7 +128,6 @@ export default new Vuex.Store({
             user.id = key; // the firebase key
             users.push(user);
           }
-          console.log('users:',users);
           commit('STORE_USER', users[0]);
         })
         .catch(err => { console.log(err) })

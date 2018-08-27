@@ -10,12 +10,10 @@ axios.defaults.baseURL = 'https://academind-vue-axios.firebaseio.com/';
 axios.defaults.headers.get['Accepts']="application/json";
 
 axios.interceptors.request.use( (config) => {
-  console.log("Request config:", config);
   return config;
 } );
 
 axios.interceptors.response.use( (res) => {
-  console.log("Response:", res);
   return res;
 } )
 
