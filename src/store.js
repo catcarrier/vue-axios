@@ -26,8 +26,6 @@ export default new Vuex.Store({
       state.idToken = null;
       state.userId = null;
       state.user = null;
-      localStorage.removeItem('token');
-      localStorage.removeItem('tokenExpires');
     }
 
   },
@@ -143,6 +141,9 @@ export default new Vuex.Store({
 
     logout({ commit }) {
       commit('CLEAR_AUTH');
+      localStorage.removeItem('token');
+      localStorage.removeItem('tokenExpires');
+      localStorage.removeItem('userId');
       router.replace('/');// No Back
     },
 
