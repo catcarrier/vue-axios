@@ -106,6 +106,8 @@ export default {
       email,
       unique: val => {
         if(val==='') { return true; } // if empty, nothing to test
+
+        // return a Promise that resolves to an empty object {} if no match
         return axios.get('users.json?orderBy="email"&equalTo="' + val + '"')
           .then( res => {
             console.log(res);
