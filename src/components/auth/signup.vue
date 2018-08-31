@@ -11,26 +11,32 @@
                   v-model="email">
           <p class="nag" v-if="!$v.email.email">Please provide a valid email address</p>
         </div>
-        <div class="input">
+        <div class="input" :class="{invalid:$v.age.$error}">
           <label for="age">Your Age</label>
           <input
                   type="number"
                   id="age"
+                  @blur="$v.age.$touch()"
                   v-model.number="age">
+          <p class="nag" v-if="$v.age.$error">Age must be {{ $v.age.$params.minVal.min }} or older.</p>
         </div>
-        <div class="input">
+        <div class="input" :class="{invalid:$v.password.$error}">
           <label for="password">Password</label>
           <input
                   type="password"
                   id="password"
+                  @blur="$v.password.$touch()"
                   v-model="password">
+          <p class="nag" v-if="$v.password.$error">Password not valid</p>
         </div>
-        <div class="input">
+        <div class="input" :class="{invalid:$v.confirmPassword.$error}">
           <label for="confirm-password">Confirm Password</label>
           <input
                   type="password"
                   id="confirm-password"
+                  @blur="$v.confirmPassword.$touch()"
                   v-model="confirmPassword">
+          <p class="nag" v-if="$v.confirmPassword.$error">Password not valid</p>
         </div>
         <div class="input">
           <label for="country">Country</label>
@@ -71,7 +77,7 @@
 </template>
 
 <script>
-import { required, email } from "vuelidate/lib/validators";
+import { required, email, numeric, minValue, minLength, sameAs } from "vuelidate/lib/validators";
 export default {
   data() {
     return {
@@ -89,6 +95,24 @@ export default {
     email: {
       required,
       email
+    },
+    age: {
+      required,
+      numeric,
+      minVal: minValue(18)
+    },
+    password: {
+      required, 
+      minLen: minLength(8)
+    },
+    confirmPassword: {
+      // built in sameAs validator
+      //sameAs: sameAs('password')
+
+      // or we can pass a validation function
+      // the function just return the value or field we
+      // are to compare against
+      sameAs: sameAs( vm => { return vm.password })
     }
   },
   methods: {
