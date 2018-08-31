@@ -53,23 +53,31 @@
           <div class="hobby-list">
             <div
                     class="input"
+                    :class="{invalid:$v.hobbyInputs.$each[index].$error}"
                     v-for="(hobbyInput, index) in hobbyInputs"
                     :key="hobbyInput.id">
               <label :for="hobbyInput.id">Hobby #{{ index }}</label>
               <input
                       type="text"
                       :id="hobbyInput.id"
+                      @blur="$v.hobbyInputs.$each[index].value.$touch()"
                       v-model="hobbyInput.value">
               <button @click="onDeleteHobby(hobbyInput.id)" type="button">X</button>
             </div>
+            <p v-if="!$v.hobbyInputs.minLen">Specify at least {{ $v.hobbyInputs.minLen }} hobbies.</p>
+            <p v-if="!$v.hobbyInputs.required">Add some hobbies.</p>
           </div>
         </div>
-        <div class="input inline">
-          <input type="checkbox" id="terms" v-model="terms">
+        <div class="input inline" :class="{invalid: $v.terms.$error}">
+          <input 
+            type="checkbox" 
+            id="terms" 
+            @change="$v.terms.$touch()"
+            v-model="terms">
           <label for="terms">Accept Terms of Use</label>
         </div>
         <div class="submit">
-          <button type="submit">Submit</button>
+          <button type="submit" :disabled="$v.$invalid">Submit</button>
         </div>
       </form>
     </div>
@@ -77,7 +85,8 @@
 </template>
 
 <script>
-import { required, email, numeric, minValue, minLength, sameAs } from "vuelidate/lib/validators";
+import { required, requiredUnless, email, numeric, minValue, minLength, sameAs } from "vuelidate/lib/validators";
+import axios from 'axios';
 export default {
   data() {
     return {
@@ -94,7 +103,15 @@ export default {
     /* from Vuelidate */
     email: {
       required,
-      email
+      email,
+      unique: val => {
+        if(val==='') { return true; } // if empty, nothing to test
+        return axios.get('users.json?orderBy="email"&equalTo="' + val + '"')
+          .then( res => {
+            console.log(res);
+            return false;
+          })
+      }
     },
     age: {
       required,
@@ -113,6 +130,21 @@ export default {
       // the function just return the value or field we
       // are to compare against
       sameAs: sameAs( vm => { return vm.password })
+    },
+    terms: {
+      required: requiredUnless( (vm) => { 
+        return vm.country === 'germany' /* not required if country is germany */
+      } )
+    },
+    hobbyInputs: {
+      required,
+      minLen: minLength(3),
+      $each: {
+        value: {
+          required,
+          minLen: minLength(5)
+        }
+      }
     }
   },
   methods: {
@@ -127,6 +159,7 @@ export default {
       this.hobbyInputs = this.hobbyInputs.filter(hobby => hobby.id !== id);
     },
     onSubmit() {
+      alert('submit');
       const formData = {
         email: this.email,
         age: this.age,
