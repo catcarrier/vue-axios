@@ -7,7 +7,7 @@
           <input
                   type="email"
                   id="email"
-                  @input="$v.email.$touch()"
+                  @blur="$v.email.$touch()"
                   v-model="email">
           <p class="nag" v-if="!$v.email.email">Please provide a valid email address</p>
         </div>
@@ -111,7 +111,7 @@ export default {
         return axios.get('users.json?orderBy="email"&equalTo="' + val + '"')
           .then( res => {
             console.log(res);
-            return false;
+            return Object.keys(res.data).length===0;
           })
       }
     },
